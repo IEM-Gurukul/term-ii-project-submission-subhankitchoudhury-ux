@@ -1,3 +1,8 @@
+package services;
+
+import repository.UserRepository;
+import model.User;
+
 public class AuthService {
     private UserRepository userRepository;
 

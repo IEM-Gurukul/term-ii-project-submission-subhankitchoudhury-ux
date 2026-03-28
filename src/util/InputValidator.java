@@ -1,3 +1,5 @@
+package util;
+
 public class InputValidator {
 
     public static void validateUsername(String username) throws IllegalArgumentException {

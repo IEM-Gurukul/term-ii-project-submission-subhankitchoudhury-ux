@@ -1,3 +1,7 @@
+package repository;
+
+import java.util.*;
+import model.User;
 import java.util.ArrayList;
 import java.util.List;
 
