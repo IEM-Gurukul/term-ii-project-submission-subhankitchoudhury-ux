@@ -1,12 +1,11 @@
 package services;
 
-import model.*;
 import repository.*;
-import exception.*;
-import util.*;
-import java.util.List;
+import model.*;
+import java.util.*;
 
 public class BankingService {
+
     private UserRepository userRepository;
     private AccountRepository accountRepository;
     private TransactionRepository transactionRepository;
@@ -17,90 +16,141 @@ public class BankingService {
         transactionRepository = new TransactionRepository();
     }
 
+    // ================= USER =================
+
     public User registerUser(String username, String password) {
-        if (username == null || !username.matches("[a-zA-Z0-9_]+")) {
-            throw new RuntimeException("Invalid username");
+        if (username == null || !username.matches("[a-zA-Z0-9_]{3,}")) {
+            throw new RuntimeException("Invalid username! Use at least 3 characters (letters/numbers).");
         }
+
         if (password == null || password.length() < 4) {
-            throw new RuntimeException("Password too short");
+            throw new RuntimeException("Password must be at least 4 characters!");
         }
+
         if (userRepository.findByUsername(username) != null) {
-            throw new RuntimeException("Username already exists");
+            throw new RuntimeException("Username already exists!");
         }
+
         return userRepository.createUser(username, password);
     }
 
     public User loginByUsername(String username, String password) {
-        if (!userRepository.authenticateByUsername(username, password)) {
-            throw new RuntimeException("Invalid credentials");
+        User user = userRepository.findByUsername(username);
+
+        if (user == null) {
+            throw new RuntimeException("User not found!");
         }
-        return userRepository.findByUsername(username);
+
+        if (!user.getPassword().equals(password)) {
+            throw new RuntimeException("Incorrect password!");
+        }
+
+        return user;
     }
 
     public User loginByUserId(int userId, String password) {
-        if (!userRepository.authenticateByUserId(userId, password)) {
-            throw new RuntimeException("Invalid credentials");
+        User user = userRepository.findByUserId(userId);
+
+        if (user == null) {
+            throw new RuntimeException("User ID not found!");
         }
-        return userRepository.findByUserId(userId);
+
+        if (!user.getPassword().equals(password)) {
+            throw new RuntimeException("Incorrect password!");
+        }
+
+        return user;
     }
+
+    public void changePassword(int userId, String oldPassword, String newPassword) {
+        User user = userRepository.findByUserId(userId);
+
+        if (user == null) {
+            throw new RuntimeException("User not found!");
+        }
+
+        if (!user.getPassword().equals(oldPassword)) {
+            throw new RuntimeException("Old password is incorrect!");
+        }
+
+        if (newPassword == null || newPassword.length() < 4) {
+            throw new RuntimeException("New password must be at least 4 characters!");
+        }
+
+        user.setPassword(newPassword);
+    }
+
+    // ================= ACCOUNT =================
 
     public Account createAccount(int userId, double initialBalance) {
         if (initialBalance < 0) {
-            throw new RuntimeException("Invalid balance");
+            throw new RuntimeException("Initial balance cannot be negative!");
         }
-        Account acc = accountRepository.createAccount(userId, initialBalance);
-        return acc;
+
+        User user = userRepository.findByUserId(userId);
+        if (user == null) {
+            throw new RuntimeException("User not found!");
+        }
+
+        Account account = accountRepository.createAccount(userId, initialBalance);
+        user.addAccount(account);
+
+        return account;
     }
+
+    public List<Account> getUserAccounts(int userId) {
+        List<Account> accounts = accountRepository.getAccountsByUserId(userId);
+        return accounts != null ? accounts : new ArrayList<>();
+    }
+
+    // ================= TRANSACTIONS =================
 
     public void deposit(int accountNumber, double amount) {
         if (amount <= 0) {
-            throw new RuntimeException("Invalid amount");
+            throw new RuntimeException("Deposit amount must be positive!");
         }
-        Account acc = accountRepository.findByAccountNumber(accountNumber);
-        if (acc == null) {
-            throw new RuntimeException("Account not found");
+
+        Account account = accountRepository.findByAccountNumber(accountNumber);
+        if (account == null) {
+            throw new RuntimeException("Account not found!");
         }
-        acc.deposit(amount);
+
+        account.deposit(amount);
         transactionRepository.addTransaction(accountNumber, "DEPOSIT", amount);
     }
 
     public void withdraw(int accountNumber, double amount) {
         if (amount <= 0) {
-            throw new RuntimeException("Invalid amount");
+            throw new RuntimeException("Withdrawal amount must be positive!");
         }
-        Account acc = accountRepository.findByAccountNumber(accountNumber);
-        if (acc == null) {
-            throw new RuntimeException("Account not found");
+
+        Account account = accountRepository.findByAccountNumber(accountNumber);
+        if (account == null) {
+            throw new RuntimeException("Account not found!");
         }
-        if (acc.getBalance() < amount) {
-            throw new RuntimeException("Insufficient balance");
+
+        if (account.getBalance() < amount) {
+            throw new RuntimeException("Insufficient balance!");
         }
-        acc.withdraw(amount);
+
+        account.withdraw(amount);
         transactionRepository.addTransaction(accountNumber, "WITHDRAW", amount);
-    }
-
-    public List<Account> getUserAccounts(int userId) {
-        return accountRepository.getAccountsByUserId(userId);
-    }
-
-    public List<Transaction> getAccountTransactions(int accountNumber) {
-        return transactionRepository.getTransactionsByAccount(accountNumber);
     }
 
     public void transfer(int fromAccount, int toAccount, double amount) {
         if (amount <= 0) {
-            throw new RuntimeException("Invalid amount");
+            throw new RuntimeException("Transfer amount must be positive!");
         }
 
         Account sender = accountRepository.findByAccountNumber(fromAccount);
         Account receiver = accountRepository.findByAccountNumber(toAccount);
 
         if (sender == null || receiver == null) {
-            throw new RuntimeException("Account not found");
+            throw new RuntimeException("One or both accounts not found!");
         }
 
         if (sender.getBalance() < amount) {
-            throw new RuntimeException("Insufficient balance");
+            throw new RuntimeException("Insufficient balance in sender account!");
         }
 
         sender.withdraw(amount);
@@ -110,17 +160,14 @@ public class BankingService {
         transactionRepository.addTransaction(toAccount, "TRANSFER_IN", amount);
     }
 
-    public void changePassword(int userId, String oldPassword, String newPassword) {
-        User user = userRepository.findByUserId(userId);
-        if (user == null) {
-            throw new RuntimeException("User not found");
+    public List<Transaction> getAccountTransactions(int accountNumber) {
+        Account account = accountRepository.findByAccountNumber(accountNumber);
+
+        if (account == null) {
+            throw new RuntimeException("Account not found!");
         }
-        if (!user.getPassword().equals(oldPassword)) {
-            throw new RuntimeException("Incorrect password");
-        }
-        if (newPassword.length() < 4) {
-            throw new RuntimeException("Password too short");
-        }
-        user.setPassword(newPassword);
+
+        List<Transaction> transactions = transactionRepository.getTransactionsByAccount(accountNumber);
+        return transactions != null ? transactions : new ArrayList<>();
     }
 }
