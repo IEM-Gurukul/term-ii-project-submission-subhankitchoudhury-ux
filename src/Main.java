@@ -1,70 +1,106 @@
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Main {
-
     public static void main(String[] args) {
 
         BankingService service = new BankingService();
         Scanner sc = new Scanner(System.in);
 
-        int choice;
+        int choice = 0;
 
         do {
-            System.out.println("\n===== MINI BANKING SYSTEM =====");
-            System.out.println("1. Create Account");
-            System.out.println("2. Deposit Money");
-            System.out.println("3. Withdraw Money");
-            System.out.println("4. Display Accounts");
-            System.out.println("5. Exit");
-            System.out.print("Enter your choice: ");
+            try {
+                System.out.println("\n===== MINI BANKING SYSTEM =====");
+                System.out.println("1. Create Account");
+                System.out.println("2. Deposit Money");
+                System.out.println("3. Withdraw Money");
+                System.out.println("4. Display Accounts");
+                System.out.println("5. Exit");
+                System.out.print("Enter your choice: ");
 
-            choice = sc.nextInt();
+                choice = sc.nextInt();
 
-            switch (choice) {
-                case 1:
-                    System.out.print("Enter Account Number: ");
-                    int accNo = sc.nextInt();
-                    sc.nextLine();
+                switch (choice) {
 
-                    System.out.print("Enter Name: ");
-                    String name = sc.nextLine();
+                    // ✅ CREATE ACCOUNT (FULLY VALIDATED)
+                    case 1:
+                        System.out.print("Enter Account Number: ");
+                        int accNo = sc.nextInt();
+                        sc.nextLine();
 
-                    System.out.print("Enter Initial Balance: ");
-                    double balance = sc.nextDouble();
+                        if (accNo <= 0) {
+                            throw new InvalidAmountException("Account number must be positive!");
+                        }
 
-                    service.createAccount(accNo, name, balance);
-                    break;
+                        System.out.print("Enter Name: ");
+                        String name = sc.nextLine();
 
-                case 2:
-                    System.out.print("Enter Account Number: ");
-                    int depAcc = sc.nextInt();
+                        if (!name.matches("[a-zA-Z ]+")) {
+                            throw new InvalidAmountException("Name must contain only alphabets!");
+                        }
 
-                    System.out.print("Enter Amount: ");
-                    double depAmt = sc.nextDouble();
+                        System.out.print("Enter Initial Balance: ");
+                        double balance = sc.nextDouble();
 
-                    service.deposit(depAcc, depAmt);
-                    break;
+                        service.createAccount(accNo, name, balance);
+                        break;
 
-                case 3:
-                    System.out.print("Enter Account Number: ");
-                    int withAcc = sc.nextInt();
+                    // ✅ DEPOSIT
+                    case 2:
+                        System.out.print("Enter Account Number: ");
+                        int depAcc = sc.nextInt();
 
-                    System.out.print("Enter Amount: ");
-                    double withAmt = sc.nextDouble();
+                        if (depAcc <= 0) {
+                            throw new InvalidAmountException("Invalid account number!");
+                        }
 
-                    service.withdraw(withAcc, withAmt);
-                    break;
+                        System.out.print("Enter Amount: ");
+                        double depAmt = sc.nextDouble();
 
-                case 4:
-                    service.displayAccounts();
-                    break;
+                        service.deposit(depAcc, depAmt);
+                        break;
 
-                case 5:
-                    System.out.println("Exiting... Thank you!");
-                    break;
+                    // ✅ WITHDRAW
+                    case 3:
+                        System.out.print("Enter Account Number: ");
+                        int withAcc = sc.nextInt();
 
-                default:
-                    System.out.println("Invalid choice!");
+                        if (withAcc <= 0) {
+                            throw new InvalidAmountException("Invalid account number!");
+                        }
+
+                        System.out.print("Enter Amount: ");
+                        double withAmt = sc.nextDouble();
+
+                        service.withdraw(withAcc, withAmt);
+                        break;
+
+                    // ✅ DISPLAY
+                    case 4:
+                        service.displayAccounts();
+                        break;
+
+                    // ✅ EXIT
+                    case 5:
+                        System.out.println("Exiting... Thank you!");
+                        break;
+
+                    default:
+                        System.out.println("Invalid choice!");
+                }
+
+            }
+            // ❌ Wrong data type (e.g., string instead of number)
+            catch (InputMismatchException e) {
+                System.out.println("Invalid input! Please enter correct data type.");
+                sc.nextLine(); // clear buffer
+            }
+
+            // ❌ All custom exceptions handled here
+            catch (DuplicateAccountException | AccountNotFoundException | InvalidAmountException
+                    | InsufficientBalanceException e) {
+                System.out.println("Error: " + e.getMessage());
             }
 
         } while (choice != 5);

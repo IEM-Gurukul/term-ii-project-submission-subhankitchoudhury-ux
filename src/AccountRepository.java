@@ -1,22 +1,27 @@
 import java.util.*;
 
 public class AccountRepository {
-    private List<Account> accountList = new ArrayList<>();
+    private List<Account> accounts = new ArrayList<>();
 
-    public void addAccount(Account account) {
-        accountList.add(account);
+    public void addAccount(Account account) throws DuplicateAccountException {
+        for (Account acc : accounts) {
+            if (acc.getAccountNumber() == account.getAccountNumber()) {
+                throw new DuplicateAccountException("Account already exists!");
+            }
+        }
+        accounts.add(account);
     }
 
-    public Account findAccount(int accNo) {
-        for (Account acc : accountList) {
+    public Account findAccount(int accNo) throws AccountNotFoundException {
+        for (Account acc : accounts) {
             if (acc.getAccountNumber() == accNo) {
                 return acc;
             }
         }
-        return null;
+        throw new AccountNotFoundException("Account not found!");
     }
 
     public List<Account> getAllAccounts() {
-        return accountList;
+        return accounts;
     }
 }
